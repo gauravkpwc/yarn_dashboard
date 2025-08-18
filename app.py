@@ -74,12 +74,17 @@ st.plotly_chart(fig_util)
 
 # Downtime Chart and Pie Chart
 st.subheader("Downtime Over Time and Reason Distribution")
-downtime_df = filtered_df.groupby('Date')['Downtime'].mean().reset_index()
-fig_downtime = px.line(downtime_df, x='Date', y='Downtime', title='Downtime Over Time')
+if selected_reason == 'All':
+    downtime_df = filtered_df.groupby('Date')['Downtime'].mean().reset_index()
+    reason_cols = ['RM Shortage', 'Machine Idle', 'Breakages', 'Electrical', 'Mechanical', 'Others']
+    reason_df = filtered_df[reason_cols].sum().reset_index()
+    reason_df.columns = ['Reason', 'Duration']
+else:
+    downtime_df = filtered_df.groupby('Date')[selected_reason].mean().reset_index()
+    downtime_df.columns = ['Date', 'Downtime']
+    reason_df = pd.DataFrame({ 'Reason': [selected_reason], 'Duration': [filtered_df[selected_reason].sum()] })
 
-reason_cols = ['RM Shortage', 'Machine Idle', 'Breakages', 'Electrical', 'Mechanical', 'Others']
-reason_df = filtered_df[reason_cols].sum().reset_index()
-reason_df.columns = ['Reason', 'Duration']
+fig_downtime = px.line(downtime_df, x='Date', y='Downtime', title='Downtime Over Time')
 fig_pie = px.pie(reason_df, names='Reason', values='Duration', title='Downtime Reason Distribution')
 
 col1, col2 = st.columns(2)
@@ -88,11 +93,11 @@ with col1:
 with col2:
     st.plotly_chart(fig_pie)
 
-# Downgrade Chart
+# Downgrade Chart (Area Chart)
 st.subheader("Downgrade Percentages Over Time")
 downgrade_df = filtered_df.groupby('Date')[['RM Downgrade %', 'Quality Downgrade %', 'Packing Downgrade %']].mean().reset_index()
-fig_downgrade = px.bar(downgrade_df, x='Date', y=['RM Downgrade %', 'Quality Downgrade %', 'Packing Downgrade %'],
-                       title='Downgrade Percentages Over Time')
+fig_downgrade = px.area(downgrade_df, x='Date', y=['RM Downgrade %', 'Quality Downgrade %', 'Packing Downgrade %'],
+                        title='Downgrade Percentages Over Time')
 st.plotly_chart(fig_downgrade)
 
 # Energy Intensity Chart
