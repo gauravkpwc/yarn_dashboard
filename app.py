@@ -126,7 +126,7 @@ fig_downtime.add_trace(go.Scatter(
 fig_downtime.update_layout(title='Downtime Over Time', yaxis=dict(range=[5, 20]))
 
 fig_pie = px.pie(reason_df, names='Reason', values='Duration', title='Downtime Reason Distribution', hole=0.3,
-                 color_discrete_sequence=[colors['orange'], colors['grey'], colors['dark_grey'], colors['light_grey'], '#CCCCCC', '#999999'])
+                 color_discrete_sequence=[colors['orange'], colors['grey'], colors['dark_grey'], colors['dark_red'], '#CCCCCC', '#999999'])
 fig_pie.update_traces(textposition='inside', textinfo='value', texttemplate='%{value:.1f}')
 
 col1, col2 = st.columns(2)
