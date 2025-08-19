@@ -69,23 +69,37 @@ if selected_machine != 'All':
 # Utilization Chart
 st.subheader("Utilization Over Time")
 utilization_df = filtered_df.groupby('Date')['Utilization'].mean().reset_index()
-fig_util = px.line(utilization_df, x='Date', y='Utilization', title='Utilization Over Time')
+fig_util = go.Figure()
+fig_util.add_trace(go.Scatter(
+    x=utilization_df['Date'],
+    y=utilization_df['Utilization'],
+    mode='lines+markers+text',
+    text=[f"{val:.1f}" for val in utilization_df['Utilization']],
+    textposition='top center',
+    name='Utilization'
+))
+fig_util.update_layout(title='Utilization Over Time')
 st.plotly_chart(fig_util)
 
 # Downtime Chart and Pie Chart
 st.subheader("Downtime Over Time and Reason Distribution")
-if selected_reason == 'All':
-    downtime_df = filtered_df.groupby('Date')['Downtime'].mean().reset_index()
-    reason_cols = ['RM Shortage', 'Machine Idle', 'Breakages', 'Electrical', 'Mechanical', 'Others']
-    reason_df = filtered_df[reason_cols].sum().reset_index()
-    reason_df.columns = ['Reason', 'Duration']
-else:
-    downtime_df = filtered_df.groupby('Date')[selected_reason].mean().reset_index()
-    downtime_df.columns = ['Date', 'Downtime']
-    reason_df = pd.DataFrame({ 'Reason': [selected_reason], 'Duration': [filtered_df[selected_reason].sum()] })
+downtime_df = filtered_df.groupby('Date')['Downtime'].mean().reset_index()
+fig_downtime = go.Figure()
+fig_downtime.add_trace(go.Scatter(
+    x=downtime_df['Date'],
+    y=downtime_df['Downtime'],
+    mode='lines+markers+text',
+    text=[f"{val:.1f}" for val in downtime_df['Downtime']],
+    textposition='top center',
+    name='Downtime'
+))
+fig_downtime.update_layout(title='Downtime Over Time')
 
-fig_downtime = px.line(downtime_df, x='Date', y='Downtime', title='Downtime Over Time')
-fig_pie = px.pie(reason_df, names='Reason', values='Duration', title='Downtime Reason Distribution')
+reason_cols = ['RM Shortage', 'Machine Idle', 'Breakages', 'Electrical', 'Mechanical', 'Others']
+reason_df = filtered_df[reason_cols].sum().reset_index()
+reason_df.columns = ['Reason', 'Duration']
+fig_pie = px.pie(reason_df, names='Reason', values='Duration', title='Downtime Reason Distribution', hole=0.3)
+fig_pie.update_traces(textposition='inside', textinfo='percent+label', texttemplate='%{label}: %{percent:.1%}')
 
 col1, col2 = st.columns(2)
 with col1:
@@ -93,31 +107,28 @@ with col1:
 with col2:
     st.plotly_chart(fig_pie)
 
-# Downgrade Chart (Area Chart)
+# Downgrade Chart
 st.subheader("Downgrade Percentages Over Time")
 downgrade_df = filtered_df.groupby('Date')[['RM Downgrade %', 'Quality Downgrade %', 'Packing Downgrade %']].mean().reset_index()
-fig_downgrade = px.area(downgrade_df, x='Date', y=['RM Downgrade %', 'Quality Downgrade %', 'Packing Downgrade %'],
-                        title='Downgrade Percentages Over Time')
+fig_downgrade = px.bar(downgrade_df, x='Date',
+                       y=['RM Downgrade %', 'Quality Downgrade %', 'Packing Downgrade %'],
+                       title='Downgrade Percentages Over Time',
+                       text_auto='.1f')
+fig_downgrade.update_traces(texttemplate='%{value:.1f}', textposition='outside')
 st.plotly_chart(fig_downgrade)
 
 # Energy Intensity Chart
 st.subheader("Energy Intensity KWH/KG")
 energy_df = filtered_df.groupby('Date')[['Machine Energy %', 'Utility Energy %', 'Other Energy %']].mean().reset_index()
-fig_energy = px.line(energy_df, x='Date', y=['Machine Energy %', 'Utility Energy %', 'Other Energy %'],
-                     title='Energy Intensity Over Time')
+fig_energy = go.Figure()
+for col in ['Machine Energy %', 'Utility Energy %', 'Other Energy %']:
+    fig_energy.add_trace(go.Scatter(
+        x=energy_df['Date'],
+        y=energy_df[col],
+        mode='lines+markers+text',
+        text=[f"{val:.1f}" for val in energy_df[col]],
+        textposition='top center',
+        name=col
+    ))
+fig_energy.update_layout(title='Energy Intensity Over Time')
 st.plotly_chart(fig_energy)
-
-# BPT and Even% Combo Chart
-st.subheader("BPT and Even% Over Time")
-combo_df = filtered_df.groupby('Date')[['BPT', 'Even %']].mean().reset_index()
-fig_combo = go.Figure()
-fig_combo.add_trace(go.Scatter(x=combo_df['Date'], y=combo_df['Even %'], name='Even %', yaxis='y1'))
-fig_combo.add_trace(go.Scatter(x=combo_df['Date'], y=combo_df['BPT'], name='BPT', yaxis='y2'))
-
-fig_combo.update_layout(
-    title='BPT and Even% Over Time',
-    yaxis=dict(title='Even %', side='left'),
-    yaxis2=dict(title='BPT', overlaying='y', side='right'),
-    xaxis=dict(title='Date')
-)
-st.plotly_chart(fig_combo)
