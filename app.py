@@ -33,9 +33,9 @@ for date in dates:
             quality_downgrade = np.random.uniform(2, 4)
             packing_downgrade = np.random.uniform(1, 2)
             total_downgrade = rm_downgrade + quality_downgrade + packing_downgrade
-            machine_energy = np.random.uniform(28, 32)
-            utility_energy = np.random.uniform(40, 50)
-            other_energy = 100 - (machine_energy + utility_energy)
+            machine_energy = np.random.uniform(280, 320)
+            utility_energy = np.random.uniform(400, 500)
+            other_energy = np.random.uniform(100, 200)
             bpt = np.random.uniform(0.7, 1.3)
             even_percent = 91 - (bpt - 0.7) * 10
 
@@ -46,8 +46,8 @@ for date in dates:
                 'Electrical': downtime_distribution['Electrical'], 'Mechanical': downtime_distribution['Mechanical'],
                 'Others': downtime_distribution['Others'], 'RM Downgrade %': rm_downgrade,
                 'Quality Downgrade %': quality_downgrade, 'Packing Downgrade %': packing_downgrade,
-                'Total Downgrade %': total_downgrade, 'Machine Energy %': machine_energy,
-                'Utility Energy %': utility_energy, 'Other Energy %': other_energy,
+                'Total Downgrade %': total_downgrade, 'Machine Energy': machine_energy,
+                'Utility Energy': utility_energy, 'Other Energy': other_energy,
                 'BPT': bpt, 'Even %': even_percent
             })
 
@@ -74,9 +74,9 @@ if selected_plant != 'All':
 if selected_machine != 'All':
     filtered_df = filtered_df[filtered_df['Machine'] == selected_machine]
 
-# Helper function to reduce label density
+# Helper function to reduce label density to 20%
 def sparse_labels(values):
-    return [f"{val:.1f}" if i % 2 == 0 else "" for i, val in enumerate(values)]
+    return [f"{val:.1f}" if i % 4 == 0 else "" for i, val in enumerate(values)]
 
 # Utilization Chart
 st.subheader("Utilization Over Time")
@@ -96,6 +96,8 @@ st.plotly_chart(fig_util)
 
 # Downtime Chart and Pie Chart
 st.subheader("Downtime Over Time and Reason Distribution")
+st.caption("Downtime Over Time – % | Reason Distribution – m/c Hrs")
+
 downtime_df = filtered_df.groupby('Date')['Downtime'].mean().reset_index()
 fig_downtime = go.Figure()
 fig_downtime.add_trace(go.Scatter(
@@ -147,21 +149,21 @@ fig_area.add_trace(go.Scatter(
 fig_area.update_layout(title='Downgrade Percentages Over Time')
 st.plotly_chart(fig_area)
 
-# Energy Intensity Chart as ribbon chart
+# Energy Intensity Chart as ribbon chart with absolute values
 st.subheader("Energy Intensity KWH/KG")
-energy_df = filtered_df.groupby('Date')[['Machine Energy %', 'Utility Energy %', 'Other Energy %']].mean().reset_index()
+energy_df = filtered_df.groupby('Date')[['Machine Energy', 'Utility Energy', 'Other Energy']].mean().reset_index()
 fig_ribbon = go.Figure()
 fig_ribbon.add_trace(go.Scatter(
-    x=energy_df['Date'], y=energy_df['Machine Energy %'], name='Machine Energy %',
+    x=energy_df['Date'], y=energy_df['Machine Energy'], name='Machine Energy',
     line=dict(color=colors['orange']), mode='lines', stackgroup='energy'
 ))
 fig_ribbon.add_trace(go.Scatter(
-    x=energy_df['Date'], y=energy_df['Utility Energy %'], name='Utility Energy %',
+    x=energy_df['Date'], y=energy_df['Utility Energy'], name='Utility Energy',
     line=dict(color=colors['grey']), mode='lines', stackgroup='energy'
 ))
 fig_ribbon.add_trace(go.Scatter(
-    x=energy_df['Date'], y=energy_df['Other Energy %'], name='Other Energy %',
+    x=energy_df['Date'], y=energy_df['Other Energy'], name='Other Energy',
     line=dict(color=colors['dark_grey']), mode='lines', stackgroup='energy'
 ))
-fig_ribbon.update_layout(title='Energy Intensity Over Time')
+fig_ribbon.update_layout(title='Energy Intensity Over Time (KWH/KG)')
 st.plotly_chart(fig_ribbon)
