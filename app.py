@@ -60,7 +60,7 @@ colors = {
     'orange': '#F05A28',
     'grey': '#A7A9AC',
     'dark_grey': '#58595B',
-    'light_grey': '#D1D3D4'
+    'dark_red': '#950606'
 }
 
 # Sidebar filters
@@ -196,7 +196,7 @@ fig_waste.add_trace(go.Scatter(
     text=sparse_labels(waste_df['Waste %'], density=4, fmt="{:.2f}"),
     textposition='top center',
     name='Waste %',
-    line=dict(color=colors['red'])
+    line=dict(color=colors['dark_red'])
 ))
 fig_waste.update_layout(title='Waste % Over Time', yaxis=dict(range=[0.35, 1.10]))
 st.plotly_chart(fig_waste)
