@@ -74,9 +74,9 @@ if selected_plant != 'All':
 if selected_machine != 'All':
     filtered_df = filtered_df[filtered_df['Machine'] == selected_machine]
 
-# Helper function to reduce label density to 20%
-def sparse_labels(values):
-    return [f"{val:.1f}" if i % 4 == 0 else "" for i, val in enumerate(values)]
+# Helper function to reduce label density to 25%
+def sparse_labels(values, density=4):
+    return [f"{val:.1f}" if i % density == 0 else "" for i, val in enumerate(values)]
 
 # Utilization Chart
 st.subheader("Utilization Over Time")
@@ -149,21 +149,27 @@ fig_area.add_trace(go.Scatter(
 fig_area.update_layout(title='Downgrade Percentages Over Time')
 st.plotly_chart(fig_area)
 
-# Energy Intensity Chart as ribbon chart with absolute values
+# Energy Intensity Chart as ribbon chart with absolute values and 25% label density
 st.subheader("Energy Intensity KWH/KG")
 energy_df = filtered_df.groupby('Date')[['Machine Energy', 'Utility Energy', 'Other Energy']].mean().reset_index()
 fig_ribbon = go.Figure()
 fig_ribbon.add_trace(go.Scatter(
     x=energy_df['Date'], y=energy_df['Machine Energy'], name='Machine Energy',
-    line=dict(color=colors['orange']), mode='lines', stackgroup='energy'
+    line=dict(color=colors['orange']), mode='lines+markers+text', stackgroup='energy',
+    text=sparse_labels(energy_df['Machine Energy']),
+    textposition='top center'
 ))
 fig_ribbon.add_trace(go.Scatter(
     x=energy_df['Date'], y=energy_df['Utility Energy'], name='Utility Energy',
-    line=dict(color=colors['grey']), mode='lines', stackgroup='energy'
+    line=dict(color=colors['grey']), mode='lines+markers+text', stackgroup='energy',
+    text=sparse_labels(energy_df['Utility Energy']),
+    textposition='top center'
 ))
 fig_ribbon.add_trace(go.Scatter(
     x=energy_df['Date'], y=energy_df['Other Energy'], name='Other Energy',
-    line=dict(color=colors['dark_grey']), mode='lines', stackgroup='energy'
+    line=dict(color=colors['dark_grey']), mode='lines+markers+text', stackgroup='energy',
+    text=sparse_labels(energy_df['Other Energy']),
+    textposition='top center'
 ))
 fig_ribbon.update_layout(title='Energy Intensity Over Time (KWH/KG)')
 st.plotly_chart(fig_ribbon)
