@@ -94,21 +94,9 @@ fig_util.update_layout(title='Utilization Over Time', yaxis=dict(range=[60, 100]
 st.plotly_chart(fig_util)
 
 # Reason Code Filter above Downtime chart
-selected_reason = st.selectbox("Select Reason Code", options=['All'] + reason_codes)
+selected_reason = st.selectbox(key='reason_code_filter', "Select Reason Code", options=['All'] + reason_codes)
 
 # Downtime Chart and Pie Chart
-
-# Reason Code Filter (applies to downtime charts)
-selected_reason = st.selectbox("Select Reason Code", options=['All'] + reason_codes)
-
-# Apply reason code filter to downtime data
-if selected_reason != 'All':
-    filtered_df['Downtime'] = filtered_df[selected_reason]
-    reason_cols = [selected_reason]
-else:
-    filtered_df['Downtime'] = filtered_df[reason_codes].sum(axis=1)
-    reason_cols = reason_codes
-
 st.subheader("Downtime Over Time and Reason Distribution")
 st.caption("Downtime Over Time – % | Reason Distribution – m/c Hrs")
 
