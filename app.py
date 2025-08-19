@@ -4,7 +4,6 @@ import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
 
-# Set the title of the Streamlit app
 st.title("Data Twin/Analytics in Yarn Industry Operations")
 
 # Generate sample data
@@ -36,6 +35,7 @@ for date in dates:
             machine_energy = np.random.uniform(280, 320)
             utility_energy = np.random.uniform(400, 500)
             other_energy = np.random.uniform(100, 200)
+            waste_percent = np.random.uniform(0.35, 1.10)
             bpt = np.random.uniform(0.7, 1.3)
             even_percent = 91 - (bpt - 0.7) * 10
 
@@ -48,7 +48,7 @@ for date in dates:
                 'Quality Downgrade %': quality_downgrade, 'Packing Downgrade %': packing_downgrade,
                 'Total Downgrade %': total_downgrade, 'Machine Energy': machine_energy,
                 'Utility Energy': utility_energy, 'Other Energy': other_energy,
-                'BPT': bpt, 'Even %': even_percent
+                'Waste %': waste_percent, 'BPT': bpt, 'Even %': even_percent
             })
 
 df = pd.DataFrame(data)
@@ -65,7 +65,6 @@ colors = {
 st.sidebar.header("Filters")
 selected_plant = st.sidebar.selectbox("Select Plant", options=['All'] + plants)
 selected_machine = st.sidebar.selectbox("Select Machine", options=['All'] + machines)
-selected_reason = st.sidebar.selectbox("Select Reason Code", options=['All'] + reason_codes)
 
 # Apply filters
 filtered_df = df.copy()
@@ -74,9 +73,9 @@ if selected_plant != 'All':
 if selected_machine != 'All':
     filtered_df = filtered_df[filtered_df['Machine'] == selected_machine]
 
-# Helper function to reduce label density to 25%
-def sparse_labels(values, density=4):
-    return [f"{val:.1f}" if i % density == 0 else "" for i, val in enumerate(values)]
+# Helper function to reduce label density
+def sparse_labels(values, density=4, fmt="{:.1f}"):
+    return [fmt.format(val) if i % density == 0 else "" for i, val in enumerate(values)]
 
 # Utilization Chart
 st.subheader("Utilization Over Time")
@@ -91,8 +90,11 @@ fig_util.add_trace(go.Scatter(
     name='Utilization',
     line=dict(color=colors['orange'])
 ))
-fig_util.update_layout(title='Utilization Over Time')
+fig_util.update_layout(title='Utilization Over Time', yaxis=dict(range=[60, 100]))
 st.plotly_chart(fig_util)
+
+# Reason Code Filter above Downtime chart
+selected_reason = st.selectbox("Select Reason Code", options=['All'] + reason_codes)
 
 # Downtime Chart and Pie Chart
 st.subheader("Downtime Over Time and Reason Distribution")
@@ -109,7 +111,7 @@ fig_downtime.add_trace(go.Scatter(
     name='Downtime',
     line=dict(color=colors['dark_grey'])
 ))
-fig_downtime.update_layout(title='Downtime Over Time')
+fig_downtime.update_layout(title='Downtime Over Time', yaxis=dict(range=[5, 20]))
 
 reason_cols = ['RM Shortage', 'Machine Idle', 'Breakages', 'Electrical', 'Mechanical', 'Others']
 reason_df = filtered_df[reason_cols].sum().reset_index()
@@ -149,27 +151,43 @@ fig_area.add_trace(go.Scatter(
 fig_area.update_layout(title='Downgrade Percentages Over Time')
 st.plotly_chart(fig_area)
 
-# Energy Intensity Chart as ribbon chart with absolute values and 25% label density
+# Energy Intensity Chart as ribbon chart with absolute values
 st.subheader("Energy Intensity KWH/KG")
 energy_df = filtered_df.groupby('Date')[['Machine Energy', 'Utility Energy', 'Other Energy']].mean().reset_index()
 fig_ribbon = go.Figure()
 fig_ribbon.add_trace(go.Scatter(
     x=energy_df['Date'], y=energy_df['Machine Energy'], name='Machine Energy',
-    line=dict(color=colors['orange']), mode='lines+markers+text', stackgroup='energy',
-    text=sparse_labels(energy_df['Machine Energy']),
-    textposition='top center'
+    line=dict(color=colors['orange']), mode='lines+text',
+    text=sparse_labels(energy_df['Machine Energy'], density=4),
+    textposition='top center', stackgroup='energy'
 ))
 fig_ribbon.add_trace(go.Scatter(
     x=energy_df['Date'], y=energy_df['Utility Energy'], name='Utility Energy',
-    line=dict(color=colors['grey']), mode='lines+markers+text', stackgroup='energy',
-    text=sparse_labels(energy_df['Utility Energy']),
-    textposition='top center'
+    line=dict(color=colors['grey']), mode='lines+text',
+    text=sparse_labels(energy_df['Utility Energy'], density=4),
+    textposition='top center', stackgroup='energy'
 ))
 fig_ribbon.add_trace(go.Scatter(
     x=energy_df['Date'], y=energy_df['Other Energy'], name='Other Energy',
-    line=dict(color=colors['dark_grey']), mode='lines+markers+text', stackgroup='energy',
-    text=sparse_labels(energy_df['Other Energy']),
-    textposition='top center'
+    line=dict(color=colors['dark_grey']), mode='lines+text',
+    text=sparse_labels(energy_df['Other Energy'], density=4),
+    textposition='top center', stackgroup='energy'
 ))
 fig_ribbon.update_layout(title='Energy Intensity Over Time (KWH/KG)')
 st.plotly_chart(fig_ribbon)
+
+# Waste % Chart
+st.subheader("Waste % Over Time")
+waste_df = filtered_df.groupby('Date')['Waste %'].mean().reset_index()
+fig_waste = go.Figure()
+fig_waste.add_trace(go.Scatter(
+    x=waste_df['Date'],
+    y=waste_df['Waste %'],
+    mode='lines+markers+text',
+    text=sparse_labels(waste_df['Waste %'], density=4, fmt="{:.2f}"),
+    textposition='top center',
+    name='Waste %',
+    line=dict(color=colors['orange'])
+))
+fig_waste.update_layout(title='Waste % Over Time', yaxis=dict(range=[0.35, 1.10]))
+st.plotly_chart(fig_waste)
